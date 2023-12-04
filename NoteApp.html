@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Colorful Note App with Save and HD Background</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 0;
+            background: url('http://images.all-free-download.com/images/graphiclarge/pink_heart_background_310850.jpg') center/cover no-repeat fixed;
+            text-align: center;
+        }
+
+        h1 {
+            color: #3498db;
+            font-family: 'Pacifico', cursive;
+            font-size: 3em;
+            text-shadow: 2px 2px 4px rgba(52, 152, 219, 0.8);
+        }
+
+        #noteInput {
+            width: 70%;
+            padding: 8px;
+            margin-top: 10px;
+        }
+
+        #addNoteBtn, #editNoteBtn {
+            padding: 8px;
+            cursor: pointer;
+            background-color: #4caf50;
+            color: white;
+            border: none;
+        }
+
+        .note {
+            margin-bottom: 10px;
+            padding: 10px;
+            border-radius: 5px;
+            position: relative;
+            background-color: #fff;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            display: inline-block;
+            width: 70%;
+            text-align: left;
+        }
+
+        .note p {
+            margin: 0;
+        }
+
+        .note .date {
+            color: #777;
+            font-size: 0.8em;
+            margin-bottom: 5px;
+        }
+
+        .deleteNoteBtn, .editNoteBtn {
+            position: absolute;
+            top: 5px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        .deleteNoteBtn {
+            right: 35px;
+            color: #e74c3c;
+        }
+
+        .deleteNoteBtn:hover {
+            color: #c0392b;
+        }
+
+        .editNoteBtn {
+            right: 5px;
+            color: #3498db;
+        }
+
+        .editNoteBtn:hover {
+            color: #2980b9;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Note App</h1>
+
+    <div>
+        <input type="text" id="noteInput" placeholder="Enter your note">
+        <button onclick="addOrUpdateNote()" id="addNoteBtn">Add Note</button>
+        <button onclick="clearNoteInput()" id="editNoteBtn">Clear</button>
+    </div>
+
+    <div id="notesContainer"></div>
+
+    <script>
+        // Load saved notes on page load
+        window.onload = function () {
+            loadSavedNotes();
+        };
+
+        var editingNoteIndex = -1;
+
+        function addOrUpdateNote() {
+            var noteInput = document.getElementById('noteInput');
+            var noteText = noteInput.value;
+
+            if (noteText.trim() === '') {
+                alert('Please enter a note.');
+                return;
+            }
+
+            if (editingNoteIndex === -1) {
+                // Add a new note
+                addNewNote(noteText);
+            } else {
+                // Update the existing note
+                updateNote(editingNoteIndex, noteText);
+            }
+
+            clearNoteInput();
+        }
+
+        function addNewNote(noteText) {
+            var notesContainer = document.getElementById('notesContainer');
+
+            var noteElement = createNoteElement(noteText);
+
+            notesContainer.appendChild(noteElement);
+        }
+
+        function updateNote(index, noteText) {
+            var notesContainer = document.getElementById('notesContainer');
+            var noteElement = notesContainer.children[index];
+
+            noteElement.getElementsByTagName('p')[0].textContent = noteText;
+            noteElement.getElementsByClassName('editNoteBtn')[0].textContent = 'Edit';
+
+            editingNoteIndex = -1; // Reset editing index
+        }
+
+        function clearNoteInput() {
+            var noteInput = document.getElementById('noteInput');
+            var addNoteBtn = document.getElementById('addNoteBtn');
+            var editNoteBtn = document.getElementById('editNoteBtn');
+
+            noteInput.value = '';
+            addNoteBtn.textContent = 'Add Note';
+            editNoteBtn.textContent = 'Clear';
+
+            editingNoteIndex = -1; // Reset editing index
+        }
+
+        function createNoteElement(noteText) {
+            var noteElement = document.createElement('div');
+            noteElement.className = 'note';
+
+            var deleteButton = document.createElement('span');
+            deleteButton.className = 'deleteNoteBtn';
+            deleteButton.innerHTML = '&#10006;';
+
+            var editButton = document.createElement('span');
+            editButton.className = 'editNoteBtn';
+            editButton.innerHTML = '&#9998;';
+
+            var dateElement = document.createElement('div');
+            dateElement.className = 'date';
+            dateElement.textContent = getTodayDate();
+
+            var noteContent = document.createElement('p');
+            noteContent.textContent = noteText;
+
+            noteElement.appendChild(deleteButton);
+            noteElement.appendChild(editButton);
+            noteElement.appendChild(dateElement);
+            noteElement.appendChild(noteContent);
+
+            deleteButton.addEventListener('click', function () {
+                var notesContainer = document.getElementById('notesContainer');
+                notesContainer.removeChild(noteElement);
+                saveNotes();
+            });
+
+            editButton.addEventListener('click', function () {
+                var noteInput = document.getElementById('noteInput');
+                var addNoteBtn = document.getElementById('addNoteBtn');
+
+                noteInput.value = noteText;
+                addNoteBtn.textContent = 'Update Note';
+                editingNoteIndex = Array.prototype.indexOf.call(notesContainer.children, noteElement);
+            });
+
+            saveNotes(); // Automatically save notes on add or update
+
+            return noteElement;
+        }
+
+        function saveNotes() {
+            var notesContainer = document.getElementById('notesContainer');
+            var notes = [];
+
+            for (var i = 0; i < notesContainer.children.length; i++) {
+                var noteContent = notesContainer.children[i].getElementsByTagName('p')[0].textContent;
+                var noteDate = notesContainer.children[i].getElementsByClassName('date')[0].textContent;
+                notes.push({ content: noteContent, date: noteDate });
+            }
+
+            localStorage.setItem('notes', JSON.stringify(notes));
+        }
+
+        function loadSavedNotes() {
+            var notesContainer = document.getElementById('notesContainer');
+            var savedNotes = localStorage.getItem('notes');
+
+            if (savedNotes) {
+                var notes = JSON.parse(savedNotes);
+
+                notes.forEach(function (note) {
+                    var noteElement = createNoteElement(note.content);
+                    notesContainer.appendChild(noteElement);
+                });
+            }
+        }
+
+        function getTodayDate() {
+            var today = new Date();
+            var options = { year: 'numeric', month: 'long', day: 'numeric' };
+            return today.toLocaleDateString('en-US', options);
+        }
+    </script>
+
+</body>
+</html>
